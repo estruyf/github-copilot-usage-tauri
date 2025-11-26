@@ -1,5 +1,7 @@
 use tauri::image::Image as TauriImage;
 
+mod auth;
+
 #[tauri::command]
 async fn fetch_copilot_usage(token: String) -> Result<String, String> {
     let client = reqwest::Client::new();
@@ -50,11 +52,55 @@ fn set_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
     tray.set_icon(Some(img)).map_err(|e| format!("Failed to set tray icon: {e}"))
 }
 
+/// Start GitHub device code authentication flow
+/// Returns the user code and verification URL
+#[tauri::command]
+async fn start_auth_flow() -> Result<auth::AuthFlowState, String> {
+    let device_code_response = auth::request_device_code().await?;
+    
+    Ok(auth::AuthFlowState {
+        user_code: device_code_response.user_code,
+        verification_uri: device_code_response.verification_uri,
+        device_code: device_code_response.device_code,
+        interval: device_code_response.interval,
+    })
+}
+
+/// Poll for the access token and start a local server to display it
+#[tauri::command]
+async fn complete_auth_flow(device_code: String, interval: u64) -> Result<String, String> {
+    // Poll for the access token
+    let token = auth::poll_for_token(&device_code, interval).await?;
+    
+    // Start a local server to display the token
+    let server_url = auth::start_token_server(token.clone(), 42847).await?;
+    
+    Ok(server_url)
+}
+
+/// Close the token server
+#[tauri::command]
+async fn close_auth_server() -> Result<(), String> {
+    // Make a request to the close endpoint
+    let client = reqwest::Client::new();
+    let _ = client.get("http://127.0.0.1:42847/close").send().await;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![fetch_copilot_usage, show_window, close_window, close_app, set_tray_icon])
+        .invoke_handler(tauri::generate_handler![
+            fetch_copilot_usage, 
+            show_window, 
+            close_window, 
+            close_app, 
+            set_tray_icon,
+            start_auth_flow,
+            complete_auth_flow,
+            close_auth_server
+        ])
         .on_window_event(|window, event| {
             // Intercept window close events: hide instead of close
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

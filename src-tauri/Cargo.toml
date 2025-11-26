@@ -25,6 +25,9 @@ serde_json = "1"
 reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
 
+# HTTP server for OAuth callback
+axum = "0.8"
+
 # needed to construct native tray icons at runtime
 tao = "0.34"
 image = "0.25"
