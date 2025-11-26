@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { fetchCopilotUsage, calculatePercentage, getStoredToken, storeToken } from './services/copilot';
 import type { CopilotUsage } from './types';
 import './App.css';
