@@ -3,7 +3,7 @@
 A system tray application built with Tauri that displays your GitHub Copilot
 metered usage with real-time percentage bars for Premium requests.
 
-![app](./assets/app-screenshot.png)
+![app](./screenshots/app-screenshot.png)
 
 ## Features
 
