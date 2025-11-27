@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchCopilotUsage, calculatePercentage, getStoredToken, storeToken } from './services/copilot';
+import { startAuthFlow, completeAuthFlow, closeAuthServer } from './services/auth';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import type { CopilotUsage } from './types';
 import './App.css';
 import { useTray } from './contexts/TrayContext';
 import ProgressBar from './components/ProgressBar';
 
 function App() {
+  const [userCode, setUserCode] = useState<string>('');
   const [usage, setUsage] = useState<CopilotUsage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +23,16 @@ function App() {
     const v = localStorage.getItem('showPercent');
     return v === null ? true : v === '1';
   });
+
+  // Auth flow state
+  const [authState, setAuthState] = useState<{
+    userCode: string;
+    verificationUri: string;
+    deviceCode: string;
+    interval: number;
+  } | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const storedToken = getStoredToken();
@@ -53,17 +66,71 @@ function App() {
     }
   };
 
-  const handleSaveToken = () => {
+  const handleSaveToken = async () => {
     if (token.trim()) {
       storeToken(token);
       setHasToken(true);
       loadUsage(token);
+      // Close the auth server if it's running
+      try {
+        await closeAuthServer();
+      } catch {
+        // Ignore errors - server might not be running
+      }
+      setAuthState(null);
     }
   };
 
   const handleRefresh = () => {
     if (token) {
       loadUsage(token);
+    }
+  };
+
+  const startPollingForToken = async (deviceCode: string, attempts = 0) => {
+    try {
+      const authToken = await completeAuthFlow(deviceCode);
+      setToken(authToken);
+      storeToken(authToken);
+      setHasToken(true);
+      loadUsage(authToken);
+      setAuthState(null);
+    } catch (err) {
+      if (attempts >= 30) { // Max 5 minutes (30 attempts at 10 seconds each)
+        setAuthError('Authentication timed out after 5 minutes');
+        setAuthState(null);
+        return;
+      }
+      setTimeout(() => {
+        startPollingForToken(deviceCode, attempts + 1);
+      }, 10 * 1000); // Try again after 10 seconds
+    }
+  };
+
+  const handleStartAuth = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    console.log("Starting auth flow");
+    try {
+      const result = await startAuthFlow();
+      console.log("Auth flow started", result);
+      setAuthState({
+        userCode: result.user_code,
+        verificationUri: result.verification_uri,
+        deviceCode: result.device_code,
+        interval: result.interval,
+      });
+
+      // Open the verification URL in default browser
+      await openUrl(result.verification_uri);
+      setUserCode(result.user_code);
+
+      console.log("Starting polling");
+      startPollingForToken(result.device_code);
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : 'Failed to start authentication');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -99,7 +166,39 @@ function App() {
       <div className="container">
         <h1>GitHub Copilot Usage</h1>
         <div className="token-setup">
-          <p>Enter your GitHub Personal Access Token</p>
+          <p>Enter your GitHub Personal Access Token or use the GitHub login</p>
+
+          <button
+            onClick={handleStartAuth}
+            disabled={authLoading || authState !== null}
+            className="btn-github"
+          >
+            {authLoading ? 'Starting...' : '🔑 Login with GitHub'}
+          </button>
+
+          {authState && (
+            <div className="auth-code-section">
+              <p>Enter this code at <a href={authState.verificationUri} target="_blank" rel="noopener noreferrer">{authState.verificationUri}</a>:</p>
+              <div className="user-code">{authState.userCode}</div>
+              <p className="auth-status">Waiting for authorization...</p>
+            </div>
+          )}
+
+          {
+            userCode && !authState && (
+              <div className="auth-code-section">
+                <p>If you haven't authorized yet, go to <a href="https://github.com/login/device" target="_blank" rel="noopener noreferrer">https://github.com/login/device</a> and enter the code:</p>
+                <div className="user-code">{userCode}</div>
+              </div>
+            )
+          }
+
+          {authError && <div className="error">{authError}</div>}
+
+          <div className="divider">
+            <span>or enter token manually</span>
+          </div>
+
           <input
             type="password"
             value={token}
@@ -107,6 +206,9 @@ function App() {
             placeholder="ghp_..."
             className="token-input"
           />
+          <button onClick={() => setToken('')} className="btn-secondary">
+            Clear
+          </button>
           <button onClick={handleSaveToken} className="btn-primary">
             Save Token
           </button>

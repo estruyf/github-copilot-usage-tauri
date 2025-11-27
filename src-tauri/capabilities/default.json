@@ -6,6 +6,14 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "core:app:allow-default-window-icon"
+    "core:app:allow-default-window-icon",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://github.com/login/device"
+        }
+      ]
+    }
   ]
 }

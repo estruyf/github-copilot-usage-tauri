@@ -179,3 +179,89 @@ button:disabled {
   width: 15px;
   height: 15px;
 }
+
+/* Auth flow styles */
+.btn-github {
+  background: linear-gradient(90deg, #24292e 0%, #2f363d 100%);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(36, 41, 46, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+}
+
+.btn-github:hover {
+  background: linear-gradient(90deg, #2f363d 0%, #3a424d 100%);
+}
+
+.btn-github:disabled {
+  background: #6a737d;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0;
+  color: #8b949e;
+  font-size: 12px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.divider span {
+  padding: 0 12px;
+}
+
+.auth-code-section {
+  background: linear-gradient(180deg, #f6f8fa 0%, #f1f3f5 100%);
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.auth-code-section p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #57606a;
+}
+
+.auth-code-section a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.auth-code-section a:hover {
+  text-decoration: underline;
+}
+
+.user-code {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #0f1720;
+  background: #fff;
+  padding: 12px 20px;
+  border-radius: 6px;
+  border: 2px solid #0969da;
+  display: inline-block;
+  margin: 8px 0;
+}
+
+.auth-status {
+  color: #57606a;
+  font-size: 12px;
+  margin-top: 8px !important;
+  margin-bottom: 0 !important;
+}
