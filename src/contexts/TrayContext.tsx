@@ -1,11 +1,19 @@
 import React, { createContext, useContext, useCallback, useEffect } from 'react';
 import { TrayIcon } from '@tauri-apps/api/tray';
+import { Menu, MenuItemOptions, PredefinedMenuItemOptions } from '@tauri-apps/api/menu';
 import { invoke } from '@tauri-apps/api/core';
+
+type UsageInfo = {
+  premiumUsed: number;
+  premiumLimit: number;
+  premiumRemaining: number;
+};
 
 type TrayContextType = {
   setText: (text?: string) => Promise<void>;
   close: () => Promise<void>;
   tray: TrayIcon | null;
+  updateMenu: (usage: UsageInfo | null) => Promise<void>;
 };
 
 const TrayContext = createContext<TrayContextType | null>(null);
@@ -40,12 +48,66 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
     found?.close();
   }, []);
 
+  const updateMenu = useCallback(async (usage: UsageInfo | null) => {
+    try {
+      const targetTray = tray ?? await TrayIcon.getById('main');
+      if (!targetTray) return;
+
+      const items: Array<MenuItemOptions | PredefinedMenuItemOptions> = [];
+
+      if (usage) {
+        items.push(
+          {
+            id: 'usage_header',
+            text: 'Premium Requests',
+            enabled: false,
+          },
+          {
+            id: 'usage_used',
+            text: `  Used: ${usage.premiumUsed} / ${usage.premiumLimit}`,
+            enabled: false,
+          },
+          {
+            id: 'usage_remaining',
+            text: `  Remaining: ${usage.premiumRemaining}`,
+            enabled: false,
+          },
+          {
+            item: 'Separator',
+          }
+        );
+      }
+
+      items.push(
+        {
+          id: 'show',
+          text: 'Show App',
+          action: () => {
+            invoke('show_window');
+          },
+        },
+        {
+          id: 'quit',
+          text: 'Quit',
+          action: () => {
+            invoke('close_app');
+          },
+        }
+      );
+
+      const menu = await Menu.new({ items });
+      await targetTray.setMenu(menu);
+    } catch (e) {
+      console.debug('updateMenu error', e);
+    }
+  }, [tray]);
+
   useEffect(() => {
     invoke('set_tray_icon');
   }, []);
 
   return (
-    <TrayContext.Provider value={{ setText, close, tray }}>
+    <TrayContext.Provider value={{ setText, close, tray, updateMenu }}>
       {children}
     </TrayContext.Provider>
   );

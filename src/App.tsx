@@ -14,7 +14,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState('');
   const [hasToken, setHasToken] = useState(false);
-  const { setText } = useTray();
+  const { setText, updateMenu } = useTray();
   const [showBar, setShowBar] = useState<boolean>(() => {
     const v = localStorage.getItem('showBar');
     return v === null ? true : v === '1';
@@ -160,6 +160,19 @@ function App() {
   useEffect(() => {
     localStorage.setItem('showPercent', showPercent ? '1' : '0');
   }, [showPercent]);
+
+  useEffect(() => {
+    if (usage) {
+      const remaining = usage.premium_requests_limit - usage.premium_requests_used;
+      updateMenu({
+        premiumUsed: usage.premium_requests_used,
+        premiumLimit: usage.premium_requests_limit,
+        premiumRemaining: remaining,
+      });
+    } else {
+      updateMenu(null);
+    }
+  }, [usage, updateMenu]);
 
   if (!hasToken) {
     return (
