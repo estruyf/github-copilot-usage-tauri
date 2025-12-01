@@ -109,6 +109,22 @@ h2 {
   text-align: center;
 }
 
+.usage-text.usage-orange {
+  color: #f97316;
+}
+
+.usage-text.usage-red {
+  color: #dc2626;
+}
+
+.progress-fill.usage-orange {
+  background: linear-gradient(90deg, #fb923c 0%, #f97316 100%);
+}
+
+.progress-fill.usage-red {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
 .billing-info {
   background-color: #fbfbfe;
   padding: 14px;
