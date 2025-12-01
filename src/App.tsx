@@ -14,7 +14,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState('');
   const [hasToken, setHasToken] = useState(false);
-  const { setText } = useTray();
+  const { setText, setIconColor } = useTray();
   const [showBar, setShowBar] = useState<boolean>(() => {
     const v = localStorage.getItem('showBar');
     return v === null ? true : v === '1';
@@ -151,7 +151,16 @@ function App() {
     if (showBar && showPercent) text += ' ';
     if (showPercent) text += percentText;
     setText(` ${text}`);
-  }, [premiumPercentage, setText, showBar, showPercent]);
+    
+    // Update tray icon color based on usage percentage
+    if (premiumPercentage > 95) {
+      setIconColor('red');
+    } else if (premiumPercentage > 75) {
+      setIconColor('orange');
+    } else {
+      setIconColor('default');
+    }
+  }, [premiumPercentage, setText, setIconColor, showBar, showPercent]);
 
   useEffect(() => {
     localStorage.setItem('showBar', showBar ? '1' : '0');

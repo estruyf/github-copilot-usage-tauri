@@ -46,6 +46,20 @@ fn set_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
     tray.set_icon(Some(img)).map_err(|e| format!("Failed to set tray icon: {e}"))
 }
 
+#[tauri::command]
+fn set_tray_icon_color(app: tauri::AppHandle, color: String) -> Result<(), String> {
+    // Select the appropriate icon based on color
+    let bytes: &[u8] = match color.as_str() {
+        "red" => include_bytes!("../tray-icon-red.png"),
+        "orange" => include_bytes!("../tray-icon-orange.png"),
+        _ => include_bytes!("../tray-icon.png"), // default (black)
+    };
+    
+    let img = TauriImage::from_bytes(bytes).map_err(|e| format!("failed to create tauri image: {}", e))?;
+    let tray = app.tray_by_id("main").ok_or("Tray not found")?;
+    tray.set_icon(Some(img)).map_err(|e| format!("Failed to set tray icon: {e}"))
+}
+
 /// Start GitHub device code authentication flow
 /// Returns the user code and verification URL
 #[tauri::command]
@@ -79,6 +93,7 @@ pub fn run() {
             show_window,
             close_app, 
             set_tray_icon,
+            set_tray_icon_color,
             start_auth_flow,
             complete_auth_flow
         ])
