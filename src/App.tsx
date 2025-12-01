@@ -141,8 +141,10 @@ function App() {
 
   useEffect(() => {
     // Create an ascii progress bar like: ▰▰▱▱▱ 45% (respect showBar/showPercent)
+    // Inverse experience: start with all full blocks, then empty as usage increases.
     const totalBlocks = 5;
-    const filledBlocks = Math.round((premiumPercentage / 100) * totalBlocks);
+    const pct = Math.max(0, Math.min(100, premiumPercentage));
+    const filledBlocks = Math.round(((100 - pct) / 100) * totalBlocks);
     const emptyBlocks = totalBlocks - filledBlocks;
     const progressBar = '▰'.repeat(filledBlocks) + '▱'.repeat(emptyBlocks);
     const percentText = `${premiumPercentage}%`;
