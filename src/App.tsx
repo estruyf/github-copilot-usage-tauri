@@ -6,6 +6,7 @@ import type { CopilotUsage } from './types';
 import './App.css';
 import { useTray } from './contexts/TrayContext';
 import ProgressBar from './components/ProgressBar';
+import { getUsageColor } from './constants';
 
 function App() {
   const [userCode, setUserCode] = useState<string>('');
@@ -153,13 +154,7 @@ function App() {
     setText(` ${text}`);
     
     // Update tray icon color based on usage percentage
-    if (premiumPercentage > 95) {
-      setIconColor('red');
-    } else if (premiumPercentage > 75) {
-      setIconColor('orange');
-    } else {
-      setIconColor('default');
-    }
+    setIconColor(getUsageColor(premiumPercentage));
   }, [premiumPercentage, setText, setIconColor, showBar, showPercent]);
 
   useEffect(() => {

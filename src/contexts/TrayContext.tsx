@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useCallback, useEffect } from 'react';
 import { TrayIcon } from '@tauri-apps/api/tray';
 import { invoke } from '@tauri-apps/api/core';
+import type { TrayIconColor } from '../constants';
 
 type TrayContextType = {
   setText: (text?: string) => Promise<void>;
-  setIconColor: (color: 'default' | 'orange' | 'red') => Promise<void>;
+  setIconColor: (color: TrayIconColor) => Promise<void>;
   close: () => Promise<void>;
   tray: TrayIcon | null;
 };
@@ -41,7 +42,7 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
     found?.close();
   }, []);
 
-  const setIconColor = useCallback(async (color: 'default' | 'orange' | 'red') => {
+  const setIconColor = useCallback(async (color: TrayIconColor) => {
     try {
       await invoke('set_tray_icon_color', { color });
     } catch (e) {
