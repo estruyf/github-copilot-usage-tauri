@@ -39,11 +39,12 @@ fn show_window(window: tauri::Window) {
 #[tauri::command]
 fn set_tray_icon(app: tauri::AppHandle) -> Result<(), String> {
     // Use tauri's Image helper to build an Image from PNG/ICO bytes
-    let bytes = include_bytes!("../tray-icon.png");
+    let bytes = include_bytes!("../tray-icon-light.png");
     let img = TauriImage::from_bytes(bytes).map_err(|e| format!("failed to create tauri image: {}", e))?;
 
     let tray = app.tray_by_id("main").ok_or("Tray not found")?;
-    tray.set_icon(Some(img)).map_err(|e| format!("Failed to set tray icon: {e}"))
+    tray.set_icon(Some(img)).map_err(|e| format!("Failed to set tray icon: {e}"))?;
+    tray.set_icon_as_template(true).map_err(|e| format!("Failed to set icon as template: {e}"))
 }
 
 /// Start GitHub device code authentication flow
