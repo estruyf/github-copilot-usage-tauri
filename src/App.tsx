@@ -87,7 +87,11 @@ function App() {
     }
   };
 
-  const startPollingForToken = async (deviceCode: string, attempts = 0) => {
+  const startPollingForToken = async (
+    deviceCode: string,
+    intervalSeconds = 5,
+    attempts = 0
+  ) => {
     try {
       const authToken = await completeAuthFlow(deviceCode);
       setToken(authToken);
@@ -96,14 +100,26 @@ function App() {
       loadUsage(authToken);
       setAuthState(null);
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const isPending =
+        message.includes('authorization_pending') ||
+        message.includes('Authorization is still pending') ||
+        message.includes('slow_down');
+
+      if (!isPending) {
+        setAuthError(message || 'Authentication failed');
+        setAuthState(null);
+        return;
+      }
+
       if (attempts >= 30) { // Max 5 minutes (30 attempts at 10 seconds each)
         setAuthError('Authentication timed out after 5 minutes');
         setAuthState(null);
         return;
       }
       setTimeout(() => {
-        startPollingForToken(deviceCode, attempts + 1);
-      }, 10 * 1000); // Try again after 10 seconds
+        startPollingForToken(deviceCode, intervalSeconds, attempts + 1);
+      }, Math.max(5, intervalSeconds) * 1000);
     }
   };
 
@@ -126,7 +142,7 @@ function App() {
       setUserCode(result.user_code);
 
       console.log("Starting polling");
-      startPollingForToken(result.device_code);
+      startPollingForToken(result.device_code, result.interval);
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : 'Failed to start authentication');
     } finally {

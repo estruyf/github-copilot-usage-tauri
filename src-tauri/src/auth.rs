@@ -1,11 +1,4 @@
-use axum::{
-    Router,
-    routing::get,
-    response::Html,
-};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use tokio::sync::oneshot;
 
 const GITHUB_DEVICE_CODE_URL: &str = "https://github.com/login/device/code";
 const GITHUB_ACCESS_TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
@@ -13,7 +6,6 @@ const GITHUB_ACCESS_TOKEN_URL: &str = "https://github.com/login/oauth/access_tok
 // It's safe to use because device code flow is designed for native apps that can't keep secrets
 const CLIENT_ID: &str = "Iv1.b507a08c87ecfe98";
 const SCOPES: &str = "read:email";
-pub const AUTH_SERVER_PORT: u16 = 42847;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeviceCodeResponse {
@@ -39,12 +31,6 @@ pub struct AuthFlowState {
     pub verification_uri: String,
     pub device_code: String,
     pub interval: u64,
-}
-
-/// State to hold the access token and shutdown signal
-struct ServerState {
-    access_token: Mutex<Option<String>>,
-    shutdown_tx: Mutex<Option<oneshot::Sender<()>>>,
 }
 
 /// Request device code from GitHub

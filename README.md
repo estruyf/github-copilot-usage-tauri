@@ -25,6 +25,32 @@ metered usage with real-time percentage bars for Premium requests.
 - GitHub account with Copilot access (for automated authentication) or a
   Personal Access Token
 
+If Rust is installed via `rustup`, make sure a toolchain is configured before
+running Tauri:
+
+```bash
+rustup default stable
+```
+
+Optional (repo-local instead of changing your global default):
+
+```bash
+rustup override set stable
+```
+
+If no toolchain is configured, `tauri dev` fails while running `cargo metadata`
+with an error like `rustup could not choose a version of cargo to run`.
+
+### Linux (Ubuntu/Debian)
+
+Tauri on Linux requires a few system libraries (GTK + WebKit) for the Rust
+backend to compile.
+
+```bash
+sudo apt-get update
+sudo apt-get install -y pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev
+```
+
 ## Getting Started
 
 ### Installation
@@ -62,6 +88,7 @@ npm run tauri build
 ### Automated GitHub OAuth (Recommended)
 
 The app uses GitHub's device code OAuth flow for secure authentication:
+
 1. Click "🔑 Login with GitHub" in the app
 2. Your default browser will open to GitHub's authorization page
 3. Enter the displayed user code when prompted
@@ -71,6 +98,7 @@ The app uses GitHub's device code OAuth flow for secure authentication:
 ### Manual Token Entry
 
 If you prefer to use a Personal Access Token:
+
 1. Create a token at: https://github.com/settings/tokens
 2. Ensure it has the `copilot` scope (required for Copilot usage data)
 3. Enter the token in the app's input field

@@ -65,10 +65,10 @@ async fn start_auth_flow() -> Result<auth::AuthFlowState, String> {
 
 /// Request access token using device code
 #[tauri::command]
-async fn complete_auth_flow(deviceCode: String) -> Result<String, String> {
-    println!("complete_auth_flow called with device_code: {}", deviceCode);
-    eprintln!("Device code: {:?}", &deviceCode);
-    let token = auth::request_token(&deviceCode).await?;
+async fn complete_auth_flow(device_code: String) -> Result<String, String> {
+    println!("complete_auth_flow called with device_code: {}", device_code);
+    eprintln!("Device code: {:?}", &device_code);
+    let token = auth::request_token(&device_code).await?;
     Ok(token)
 }
 
