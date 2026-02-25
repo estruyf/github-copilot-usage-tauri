@@ -1,7 +1,7 @@
 {
   "name": "github-copilot-usage",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "author": "Elio Struyf <elio@struyfconsulting.be> (https://www.eliostruyf.com)",
   "scripts": {
