@@ -124,6 +124,10 @@ h2 {
   text-align: center;
 }
 
+.billing-info p + p {
+  margin-top: 6px;
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -170,7 +174,8 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   color: #334155;
   font-size: 13px;
 }

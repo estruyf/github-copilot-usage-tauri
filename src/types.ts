@@ -5,6 +5,12 @@ export interface CopilotUsage {
   standard_requests_limit: number;
   billing_cycle_start: string;
   billing_cycle_end: string;
+  /** Raw `copilot_plan` from the API, e.g. `individual_max`, `business`. */
+  plan: string | null;
+  /** Raw `access_type_sku`, the more specific entitlement behind the plan. */
+  plan_sku: string | null;
+  /** Organisations the seat comes from, for business/enterprise plans. */
+  organizations: string[];
 }
 
 export interface UsagePercentage {

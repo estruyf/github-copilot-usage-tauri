@@ -16,6 +16,10 @@ Claude subscription usage. Pick which one the menu bar shows from the tray menu.
   from the tray menu or the in-app tabs
 - **Usage Visualization**: Visual progress bars showing Premium request usage
   (Copilot) or session and weekly limits (Claude)
+- **Menu Bar Display Options**: Toggle the ascii bar, the percentage, and the
+  raw premium request count (`used/total`) independently
+- **License**: Shows which GitHub Copilot plan the account is on (Free, Pro,
+  Pro+, Business, Enterprise) in the app and the tray menu
 - **Auto-Refresh**: Automatically updates usage data every 5 minutes
 - **Secure Token Storage**: Stores your GitHub token locally
 - **Authentication Options**: Choose between automated GitHub OAuth or manual
@@ -85,9 +89,18 @@ npm run tauri build
      OAuth flow. Your browser will open to authorize the app, then enter the
      provided code when prompted.
    - **Manual Token Entry**: Enter your GitHub Personal Access Token directly
-3. The app will fetch and display your Copilot usage
+3. The app will fetch and display your Copilot usage and licence
 4. Click the system tray icon to show/hide the usage window
 5. Usage data refreshes automatically every 5 minutes
+
+### Menu bar display
+
+Three checkboxes control what the menu bar shows, and the choice is remembered:
+
+- **Show bar** — the ascii progress bar, e.g. `▰▰▰▰▱`
+- **Show percent** — the used percentage, e.g. `45%`
+- **Show count** — the raw premium request count, e.g. `649/20000`
+  (GitHub Copilot only; Claude reports percentages only)
 
 ## Authentication Setup
 

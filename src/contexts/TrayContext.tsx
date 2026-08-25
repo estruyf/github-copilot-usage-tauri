@@ -8,6 +8,9 @@ type CopilotMenuInfo = {
   premiumUsed: number;
   premiumLimit: number;
   premiumRemaining: number;
+  /** Friendly licence name, e.g. "Copilot Pro+". */
+  plan: string | null;
+  organizations: string[];
 };
 
 type ClaudeMenuWindow = {
@@ -116,13 +119,17 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
 
       // Usage for whichever source is currently selected.
       if (source === 'copilot' && state?.copilot) {
-        const { premiumUsed, premiumLimit, premiumRemaining } = state.copilot;
+        const { premiumUsed, premiumLimit, premiumRemaining, plan, organizations } = state.copilot;
         items.push(
           { id: 'usage_header', text: 'Premium Requests', enabled: false },
           { id: 'usage_used', text: `  Used: ${premiumUsed} / ${premiumLimit}`, enabled: false },
-          { id: 'usage_remaining', text: `  Remaining: ${premiumRemaining}`, enabled: false },
-          { item: 'Separator' }
+          { id: 'usage_remaining', text: `  Remaining: ${premiumRemaining}`, enabled: false }
         );
+        if (plan) {
+          const org = organizations.length > 0 ? ` (${organizations.join(', ')})` : '';
+          items.push({ id: 'usage_plan', text: `  License: ${plan}${org}`, enabled: false });
+        }
+        items.push({ item: 'Separator' });
       } else if (source === 'claude' && state?.claude) {
         items.push({ id: 'usage_header', text: 'Claude Usage', enabled: false });
         state.claude.windows.forEach((window, index) => {

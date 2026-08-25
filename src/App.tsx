@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchCopilotUsage, calculatePercentage, getStoredToken, storeToken } from './services/copilot';
+import { fetchCopilotUsage, calculatePercentage, formatCopilotPlan, getStoredToken, storeToken } from './services/copilot';
 import { fetchClaudeUsage, getClaudeStatus, primaryWindow, formatResetsAt } from './services/claude';
 import { startAuthFlow, completeAuthFlow, closeAuthServer } from './services/auth';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -34,6 +34,10 @@ function App() {
   const [showPercent, setShowPercent] = useState<boolean>(() => {
     const v = localStorage.getItem('showPercent');
     return v === null ? true : v === '1';
+  });
+  // Copilot only: show the raw premium request count (used/total) in the menu bar.
+  const [showCount, setShowCount] = useState<boolean>(() => {
+    return localStorage.getItem('showCount') === '1';
   });
 
   // Auth flow state
@@ -212,6 +216,13 @@ function App() {
   const activePercentage = source === 'claude' ? claudePrimary?.percent ?? 0 : premiumPercentage;
   const hasActiveData = source === 'claude' ? claudeUsage !== null : usage !== null;
 
+  const copilotPlan = useMemo(() => formatCopilotPlan(usage), [usage]);
+
+  // Claude reports percentages only, so there is no count to show for that source.
+  const activeCount = source === 'claude' || !usage
+    ? null
+    : `${usage.premium_requests_used}/${usage.premium_requests_limit}`;
+
   useEffect(() => {
     // Create an ascii progress bar like: ▰▰▱▱▱ 45% (respect showBar/showPercent)
     // Inverse experience: start with all full blocks, then empty as usage increases.
@@ -220,13 +231,12 @@ function App() {
     const filledBlocks = Math.round(((100 - pct) / 100) * totalBlocks);
     const emptyBlocks = totalBlocks - filledBlocks;
     const progressBar = '▰'.repeat(filledBlocks) + '▱'.repeat(emptyBlocks);
-    const percentText = `${activePercentage}%`;
-    let text = '';
-    if (showBar) text += progressBar;
-    if (showBar && showPercent) text += ' ';
-    if (showPercent) text += percentText;
-    setText(hasActiveData ? ` ${text}` : ' —');
-  }, [activePercentage, hasActiveData, setText, showBar, showPercent]);
+    const segments: string[] = [];
+    if (showBar) segments.push(progressBar);
+    if (showPercent) segments.push(`${activePercentage}%`);
+    if (showCount && activeCount) segments.push(activeCount);
+    setText(hasActiveData ? ` ${segments.join(' ')}` : ' —');
+  }, [activePercentage, activeCount, hasActiveData, setText, showBar, showPercent, showCount]);
 
   useEffect(() => {
     localStorage.setItem('showBar', showBar ? '1' : '0');
@@ -237,12 +247,18 @@ function App() {
   }, [showPercent]);
 
   useEffect(() => {
+    localStorage.setItem('showCount', showCount ? '1' : '0');
+  }, [showCount]);
+
+  useEffect(() => {
     updateMenu({
       copilot: usage
         ? {
             premiumUsed: usage.premium_requests_used,
             premiumLimit: usage.premium_requests_limit,
-            premiumRemaining: usage.premium_requests_limit - usage.premium_requests_used,
+            premiumRemaining: Math.max(0, usage.premium_requests_limit - usage.premium_requests_used),
+            plan: copilotPlan,
+            organizations: usage.organizations,
           }
         : null,
       claude: claudeUsage
@@ -256,7 +272,7 @@ function App() {
         : null,
       claudeAvailable: claudeStatus?.available ?? false,
     });
-  }, [usage, claudeUsage, claudeStatus?.available, updateMenu]);
+  }, [usage, copilotPlan, claudeUsage, claudeStatus?.available, updateMenu]);
 
   const sourcePicker = (
     <div className="source-picker">
@@ -276,7 +292,10 @@ function App() {
   const displayOptions = (
     <div className="display-options">
       <label><input type="checkbox" checked={showBar} onChange={(e) => setShowBar(e.target.checked)} /> Show bar</label>
-      <label style={{ marginLeft: 12 }}><input type="checkbox" checked={showPercent} onChange={(e) => setShowPercent(e.target.checked)} /> Show percent</label>
+      <label><input type="checkbox" checked={showPercent} onChange={(e) => setShowPercent(e.target.checked)} /> Show percent</label>
+      {source === 'copilot' && (
+        <label><input type="checkbox" checked={showCount} onChange={(e) => setShowCount(e.target.checked)} /> Show count</label>
+      )}
     </div>
   );
 
@@ -412,6 +431,12 @@ function App() {
           {displayOptions}
 
           <div className="billing-info">
+            {copilotPlan && (
+              <p>
+                License: <strong>{copilotPlan}</strong>
+                {usage.organizations.length > 0 && ` (${usage.organizations.join(', ')})`}
+              </p>
+            )}
             <p>Billing: {new Date(usage.billing_cycle_end).toLocaleDateString()}</p>
           </div>
         </>
