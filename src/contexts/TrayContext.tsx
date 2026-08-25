@@ -2,19 +2,41 @@ import React, { createContext, useContext, useCallback, useEffect, useState } fr
 import { TrayIcon } from '@tauri-apps/api/tray';
 import { Menu, MenuItemOptions, PredefinedMenuItemOptions, CheckMenuItemOptions } from '@tauri-apps/api/menu';
 import { invoke } from '@tauri-apps/api/core';
+import { USAGE_SOURCE_LABELS, type UsageSource } from '../types';
 
-type UsageInfo = {
+type CopilotMenuInfo = {
   premiumUsed: number;
   premiumLimit: number;
   premiumRemaining: number;
+};
+
+type ClaudeMenuWindow = {
+  label: string;
+  percent: number;
+  resetsAt: string | null;
+};
+
+type ClaudeMenuInfo = {
+  windows: ClaudeMenuWindow[];
+};
+
+type MenuState = {
+  copilot: CopilotMenuInfo | null;
+  claude: ClaudeMenuInfo | null;
+  /** A Claude Code login exists on this machine, so the source is selectable. */
+  claudeAvailable: boolean;
 };
 
 type TrayContextType = {
   setText: (text?: string) => Promise<void>;
   close: () => Promise<void>;
   tray: TrayIcon | null;
-  updateMenu: (usage: UsageInfo | null) => Promise<void>;
+  updateMenu: (state: MenuState | null) => Promise<void>;
+  source: UsageSource;
+  setSource: (source: UsageSource) => void;
 };
+
+const SOURCE_STORAGE_KEY = 'usageSource';
 
 const TrayContext = createContext<TrayContextType | null>(null);
 
@@ -26,6 +48,15 @@ export const useTray = (): TrayContextType => {
 
 export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.ReactNode }> = ({ tray, children }) => {
   const [autostartEnabled, setAutostartEnabled] = useState(false);
+  const [source, setSourceState] = useState<UsageSource>(() => {
+    const stored = localStorage.getItem(SOURCE_STORAGE_KEY);
+    return stored === 'claude' ? 'claude' : 'copilot';
+  });
+
+  const setSource = useCallback((next: UsageSource) => {
+    setSourceState(next);
+    localStorage.setItem(SOURCE_STORAGE_KEY, next);
+  }, []);
 
   useEffect(() => {
     const checkAutostart = async () => {
@@ -54,58 +85,75 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
   }, [autostartEnabled]);
 
   const setText = useCallback(async (text?: string) => {
+    const tooltip = `${USAGE_SOURCE_LABELS[source]} Usage${text ? ` - ${text.trim()}` : ''}`;
     try {
       if (tray) {
         await tray.setTitle(text ?? '');
-        await tray.setTooltip(`GitHub Copilot Usage${text ? ` - ${text}` : ''}`);
+        await tray.setTooltip(tooltip);
       } else {
         // fallback: try to find the tray by id
         const found = await TrayIcon.getById('main');
         await found?.setTitle(text ?? '');
-        await found?.setTooltip(`GitHub Copilot Usage${text ? ` - ${text}` : ''}`);
+        await found?.setTooltip(tooltip);
       }
     } catch (e) {
       // ignore errors when running on platforms that don't support titles
       console.debug('setText error', e);
     }
-  }, [tray]);
+  }, [tray, source]);
 
   const close = useCallback(async () => {
     const found = await TrayIcon.getById('main');
     found?.close();
   }, []);
 
-  const updateMenu = useCallback(async (usage: UsageInfo | null) => {
+  const updateMenu = useCallback(async (state: MenuState | null) => {
     try {
       const targetTray = tray ?? await TrayIcon.getById('main');
       if (!targetTray) return;
 
       const items: Array<MenuItemOptions | PredefinedMenuItemOptions | CheckMenuItemOptions> = [];
 
-      if (usage) {
+      // Usage for whichever source is currently selected.
+      if (source === 'copilot' && state?.copilot) {
+        const { premiumUsed, premiumLimit, premiumRemaining } = state.copilot;
         items.push(
-          {
-            id: 'usage_header',
-            text: 'Premium Requests',
-            enabled: false,
-          },
-          {
-            id: 'usage_used',
-            text: `  Used: ${usage.premiumUsed} / ${usage.premiumLimit}`,
-            enabled: false,
-          },
-          {
-            id: 'usage_remaining',
-            text: `  Remaining: ${usage.premiumRemaining}`,
-            enabled: false,
-          },
-          {
-            item: 'Separator',
-          }
+          { id: 'usage_header', text: 'Premium Requests', enabled: false },
+          { id: 'usage_used', text: `  Used: ${premiumUsed} / ${premiumLimit}`, enabled: false },
+          { id: 'usage_remaining', text: `  Remaining: ${premiumRemaining}`, enabled: false },
+          { item: 'Separator' }
         );
+      } else if (source === 'claude' && state?.claude) {
+        items.push({ id: 'usage_header', text: 'Claude Usage', enabled: false });
+        state.claude.windows.forEach((window, index) => {
+          const reset = window.resetsAt ? `, resets ${window.resetsAt}` : '';
+          items.push({
+            id: `claude_window_${index}`,
+            text: `  ${window.label}: ${window.percent}%${reset}`,
+            enabled: false,
+          });
+        });
+        items.push({ item: 'Separator' });
       }
 
+      // Source picker - radio behaviour via mutually exclusive check items.
+      items.push({ id: 'source_header', text: 'Show usage for', enabled: false });
+      (Object.keys(USAGE_SOURCE_LABELS) as UsageSource[]).forEach((option) => {
+        const isClaudeUnavailable = option === 'claude' && !state?.claudeAvailable;
+        items.push({
+          id: `source_${option}`,
+          text: isClaudeUnavailable
+            ? `${USAGE_SOURCE_LABELS[option]} (not connected)`
+            : USAGE_SOURCE_LABELS[option],
+          checked: source === option,
+          // Selecting an unconnected source would only ever show a blank bar.
+          enabled: !isClaudeUnavailable,
+          action: () => setSource(option),
+        } as CheckMenuItemOptions);
+      });
+
       items.push(
+        { item: 'Separator' },
         {
           id: 'show',
           text: 'Show App',
@@ -113,18 +161,14 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
             invoke('show_window');
           },
         },
-        {
-          item: 'Separator',
-        },
+        { item: 'Separator' },
         {
           id: 'autostart',
           text: 'Start at Login',
           checked: autostartEnabled,
           action: toggleAutostart,
         } as CheckMenuItemOptions,
-        {
-          item: 'Separator',
-        },
+        { item: 'Separator' },
         {
           id: 'quit',
           text: 'Quit',
@@ -139,14 +183,14 @@ export const TrayProvider: React.FC<{ tray: TrayIcon | null; children?: React.Re
     } catch (e) {
       console.debug('Failed to update tray menu:', e);
     }
-  }, [tray, autostartEnabled, toggleAutostart]);
+  }, [tray, autostartEnabled, toggleAutostart, source, setSource]);
 
   useEffect(() => {
     invoke('set_tray_icon');
   }, []);
 
   return (
-    <TrayContext.Provider value={{ setText, close, tray, updateMenu }}>
+    <TrayContext.Provider value={{ setText, close, tray, updateMenu, source, setSource }}>
       {children}
     </TrayContext.Provider>
   );
