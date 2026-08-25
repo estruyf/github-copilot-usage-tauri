@@ -124,6 +124,10 @@ h2 {
   text-align: center;
 }
 
+.billing-info p + p {
+  margin-top: 6px;
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -170,7 +174,8 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   color: #334155;
   font-size: 13px;
 }
@@ -264,4 +269,51 @@ button:disabled {
   font-size: 12px;
   margin-top: 8px !important;
   margin-bottom: 0 !important;
+}
+
+/* Usage source picker (GitHub Copilot / Claude) */
+.source-picker {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 18px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.source-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.source-tab:hover:not(:disabled) {
+  transform: none;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.source-tab.active {
+  background: #ffffff;
+  color: #0f1720;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 32, 0.12);
+}
+
+.claude-window + .claude-window {
+  margin-top: 16px;
+}
+
+.progress-fill.claude {
+  background: linear-gradient(90deg, #d97757 0%, #e8a06b 100%);
+}
+
+.token-setup code {
+  background: #f1f5f9;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
 }

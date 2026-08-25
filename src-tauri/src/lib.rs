@@ -2,6 +2,7 @@ use tauri::image::Image as TauriImage;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
 mod auth;
+mod claude;
 
 #[tauri::command]
 async fn fetch_copilot_usage(token: String) -> Result<String, String> {
@@ -98,6 +99,8 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             fetch_copilot_usage, 
+            claude::fetch_claude_usage,
+            claude::claude_status,
             show_window,
             close_app, 
             set_tray_icon,
