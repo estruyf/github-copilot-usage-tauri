@@ -84,6 +84,12 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
         with:
           args: ${{ matrix.args }}
+          # Without an explicit tagName the action logs "No releaseId or tagName
+          # provided, skipping all uploads..." and the bundles never reach the release.
+          tagName: ${{ github.ref_name }}
+          releaseName: "${{ github.ref_name }} release"
+          releaseBody: "See the assets to download this version and install."
+          releaseDraft: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
